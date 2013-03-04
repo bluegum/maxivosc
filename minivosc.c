@@ -60,9 +60,9 @@ static int debug = 1;
 #include <sound/initval.h>
 
 MODULE_AUTHOR("sdaau");
-MODULE_DESCRIPTION("minivosc soundcard");
+MODULE_DESCRIPTION("maxivosc soundcard");
 MODULE_LICENSE("GPL");
-MODULE_SUPPORTED_DEVICE("{{ALSA,minivosc soundcard}}");
+MODULE_SUPPORTED_DEVICE("{{ALSA,maxivosc soundcard}}");
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
@@ -73,7 +73,7 @@ static struct platform_device *devices[SNDRV_CARDS];
 #define byte_pos(x)	((x) / HZ)
 #define frac_pos(x)	((x) * HZ)
 
-#define MAX_BUFFER (32 * 48)
+#define MAX_BUFFER (32 * 48 *16)
 static struct snd_pcm_hardware minivosc_pcm_hw =
 {
 	.info = (SNDRV_PCM_INFO_MMAP |
@@ -84,11 +84,11 @@ static struct snd_pcm_hardware minivosc_pcm_hw =
 	.rates            = SNDRV_PCM_RATE_8000,
 	.rate_min         = 8000,
 	.rate_max         = 8000,
-	.channels_min     = 1,
-	.channels_max     = 1,
-	.buffer_bytes_max = MAX_BUFFER, //(32 * 48) = 1536,
-	.period_bytes_min = 48,
-	.period_bytes_max = 48,
+	.channels_min     = 16,
+	.channels_max     = 16,
+	.buffer_bytes_max = 32768,//MAX_BUFFER, //(32 * 48 * 16) = 1536 * 16,
+	.period_bytes_min = 4096,
+	.period_bytes_max = 32768,
 	.periods_min      = 1,
 	.periods_max      = 32,
 };
@@ -128,9 +128,7 @@ struct minivosc_device
 };
 
 // waveform
-static char wvfdat[]={	20, 22, 24, 25, 24, 22, 21,
-			19, 17, 15, 14, 15, 17, 19,
-			20, 127, 22, 19, 17, 15, 19};
+static char wvfdat[21 * 16];
 static char wvfdat2[]={	20, 22, 24, 25, 24, 22, 21,
 			19, 17, 15, 14, 15, 17, 19,
 			20, 127, 22, 19, 17, 15, 19};
@@ -189,7 +187,7 @@ static struct snd_device_ops dev_ops =
 };
 
 
-#define SND_MINIVOSC_DRIVER	"snd_minivosc"
+#define SND_MINIVOSC_DRIVER	"snd_maxivosc"
 
 // * we need a struct describing the driver:
 static struct platform_driver minivosc_driver =
@@ -578,7 +576,7 @@ static void minivosc_timer_function(unsigned long data)
 
 // choose which  copy (fill) algorithm to use -
 // (un)comment as needed, though use only one at a time!
-//~ #define COPYALG_V1
+#define COPYALG_V1
 //~ #define COPYALG_V2
 //~ #define COPYALG_V3
 #define BUFFERMARKS // do we want 'buffer mark' samples or not
@@ -638,8 +636,22 @@ static void minivosc_fill_capture_buf(struct minivosc_device *mydev, unsigned in
 	{
 		mylift = mydev->wvf_lift*10 - 10;
 		// create modified - 'lifted' - values of waveform:
-		for (i=0; i<wvfsz; i++) {
-			wvfdat[i] = wvfdat2[i]+mylift;
+		for (i=0; i<wvfsz;) {
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
+		      wvfdat[i] = wvfdat2[i%21]+mylift; i++;
 		}
 
 		remain = bytes - dpos;
